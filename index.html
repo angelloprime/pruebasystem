@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Proyectos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    input, textarea, button {
+      padding: 8px;
+      font-size: 16px;
+    }
+    textarea {
+      resize: vertical;
+    }
+    button {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+    #fileInput {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Registrar Proyecto</h1>
+  <form id="formulario">
+    <label for="codigo">Código:</label>
+    <input type="text" id="codigo" name="codigo" required>
+    <label for="nombre">Nombre:</label>
+    <input type="text" id="nombre" name="nombre" required>
+    <label for="observacion">Observación:</label>
+    <textarea id="observacion" name="observacion" rows="4"></textarea>
+    <button type="submit">Guardar</button>
+  </form>
+  <h2>Proyectos Registrados</h2>
+  <ul id="lista-proyectos"></ul>
+  <input type="file" id="fileInput" accept=".json">
+  <script>
+    let proyectos = { proyectos: [] };
+    let fileHandle = null;
+
+    // Cargar proyectos desde un archivo JSON si se selecciona
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        try {
+          const text = await file.text();
+          proyectos = JSON.parse(text);
+          mostrarProyectos();
+        } catch (error) {
+          console.error('Error al leer el archivo:', error);
+          alert('Error al cargar el archivo JSON');
+        }
+      }
+    });
+
+    // Manejar el formulario
+    document.getElementById('formulario').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const proyecto = {
+        codigo: document.getElementById('codigo').value,
+        nombre: document.getElementById('nombre').value,
+        observacion: document.getElementById('observacion').value
+      };
+      proyectos.proyectos.push(proyecto);
+      await guardarArchivo();
+      mostrarProyectos();
+      e.target.reset();
+      alert('Proyecto guardado');
+    });
+
+    // Mostrar proyectos en la lista
+    function mostrarProyectos() {
+      const lista = document.getElementById('lista-proyectos');
+      lista.innerHTML = '';
+      proyectos.proyectos.forEach(proyecto => {
+        const li = document.createElement('li');
+        li.textContent = `${proyecto.codigo} - ${proyecto.nombre}: ${proyecto.observacion}`;
+        lista.appendChild(li);
+      });
+    }
+
+    // Guardar el archivo JSON usando FileSystem API
+    async function guardarArchivo() {
+      try {
+        // Solicitar al usuario que seleccione la ubicación del archivo
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: 'proyectos.json',
+          types: [{
+            description: 'Archivos JSON',
+            accept: { 'application/json': ['.json'] }
+          }]
+        });
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(proyectos, null, 2));
+        await writable.close();
+      } catch (error) {
+        console.error('Error al guardar el archivo:', error);
+        alert('Error al guardar el archivo JSON');
+      }
+    }
+
+    // Cargar proyectos al iniciar (opcional, si ya existe el archivo)
+    async function cargarArchivoInicial() {
+      try {
+        const fileInput = document.getElementById('fileInput');
+        fileInput.click(); // Solicita al usuario seleccionar el archivo inicial
+      } catch (error) {
+        console.error('Error al cargar el archivo inicial:', error);
+      }
+    }
+
+    // Iniciar la carga del archivo al abrir la página
+    window.onload = cargarArchivoInicial;
+  </script>
+</body>
+</html>
